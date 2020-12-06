@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_todo_hive/data/task_data.dart';
-import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
 class BottomSheetWidget extends StatefulWidget {
@@ -11,13 +10,11 @@ class BottomSheetWidget extends StatefulWidget {
 
 class _BottomSheetWidgetState extends State<BottomSheetWidget> {
   int totalTask;
+  String newTask;
 
   @override
   Widget build(BuildContext context) {
-    Hive.openBox('tasks');
-    String navoTask;
-    return Scaffold(
-      body: Container(
+    return Container(
         color: Color(0xff757575),
         child: Container(
           decoration: BoxDecoration(
@@ -27,13 +24,14 @@ class _BottomSheetWidgetState extends State<BottomSheetWidget> {
                 topRight: Radius.circular(20.0)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  onChanged: (newTask) {
-                    navoTask = newTask;
+                  onChanged: (task) {
+                    newTask = task;
                   },
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
@@ -45,12 +43,11 @@ class _BottomSheetWidgetState extends State<BottomSheetWidget> {
                 ),
                 FlatButton(
                   onPressed: () {
-                    if (navoTask == null) {
+                    if (newTask == null) {
                       Navigator.pop(context);
                     } else {
                       Provider.of<TaskList>(context, listen: false)
-                          .addTask(navoTask, DateTime.now());
-
+                          .addTask(newTask, DateTime.now());
                       Navigator.pop(context);
                     }
                   },
@@ -64,7 +61,6 @@ class _BottomSheetWidgetState extends State<BottomSheetWidget> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
