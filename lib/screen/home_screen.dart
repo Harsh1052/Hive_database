@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_todo_hive/data/task_data.dart';
 import 'package:flutter_todo_hive/widgets/bottomsheet_widget.dart';
 import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../constants.dart';
+import '../data/task_data.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -13,19 +13,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
   @override
-  Widget build(BuildContext context) {
-    Hive.openBox('tasks');
+  void initState() {
+    super.initState();
+    List<TaskData> list = [];
     for (int i = 0; i < Hive.box('tasks').length; i++) {
       final box = Hive.box('tasks').getAt(i) as TaskData;
-      Provider.of<TaskList>(context).tasksList.add(box);
+      list.add(box);
     }
+    Provider.of<TaskList>(context,listen: false).setTaskList(list);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
               context: context,
-              builder: (BuildContext context) => BottomSheetWidget());
+              isScrollControlled: true,
+              builder: (BuildContext context) => SingleChildScrollView(
+                child: Container(
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                  child: BottomSheetWidget(),
+                ),
+              ));
         },
         child: Icon(Icons.add),
       ),
@@ -85,64 +99,52 @@ class _HomeScreenState extends State<HomeScreen> {
                         topRight: Radius.circular(25.0)),
                   ),
                   // ignore: deprecated_member_use
-                  child: WatchBoxBuilder(
-                      box: Hive.box('tasks'),
-                      builder: (context, box) {
-                        Hive.openBox('tasks');
-
-                        return ListView.builder(
-                          itemBuilder: (context, index) {
-                            Hive.openBox('tasks');
-                            final newBox = box.getAt(index) as TaskData;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  title: Text(
-                                    newBox.title,
-                                    style: TextStyle(
-                                        color: newBox.isCompleted
-                                            ? Colors.grey
-                                            : Colors.black,
-                                        decoration: newBox.isCompleted
-                                            ? TextDecoration.lineThrough
-                                            : null),
-                                  ),
-                                  trailing: Checkbox(
-                                    value: newBox.isCompleted,
-                                    onChanged: (newValue) {
-                                      box.put(
-                                          index,
-                                          TaskData(
-                                              currentDate:
-                                                  DateTime.now().day.toString(),
-                                              currentMonth: DateTime.now()
-                                                  .month
-                                                  .toString(),
-                                              currentYear: DateTime.now()
-                                                  .year
-                                                  .toString(),
-                                              title: newBox.title,
-                                              isCompleted: newValue));
-                                    },
-                                  ),
-                                  leading: Text(
-                                    (index + 1).toString(),
-                                    style: TextStyle(fontSize: 20.0),
-                                  ),
-                                  onLongPress: () {
-                                    Provider.of<TaskList>(context,
-                                            listen: false)
-                                        .deleteTask(index);
-                                  },
-                                  subtitle: Text(
-                                      '${newBox.currentDate}/${newBox.currentMonth}/${newBox.currentYear}'),
+                  child:Consumer<TaskList>(
+                    builder:(context,data,child) {
+                      print('length is ${data.tasksList.length}');
+                      return ListView.builder(
+                        itemBuilder: (context, index) {
+                          final newBox = data.tasksList[index];
+                          return Column(
+                            children: [
+                              ListTile(
+                                title: Text(
+                                  newBox.title,
+                                  style: TextStyle(
+                                      color: newBox.isCompleted
+                                          ? Colors.grey
+                                          : Colors.black,
+                                      decoration: newBox.isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : null),
                                 ),
-                              ],
-                            );
-                          },
-                          itemCount: Hive.box('tasks').length,
-                        );
-                      })),
+                                trailing: Checkbox(
+                                  value: newBox.isCompleted,
+                                  onChanged: (newValue) {
+                                    Provider.of<TaskList>(context,listen: false).toggleTask(index);
+                                  },
+                                ),
+                                leading: Text(
+                                  (index + 1).toString(),
+                                  style: TextStyle(fontSize: 20.0),
+                                ),
+                                onLongPress: () {
+                                  Provider.of<TaskList>(context,
+                                      listen: false)
+                                      .deleteTask(index);
+                                },
+                                subtitle: Text(
+                                    '${newBox.currentDate}/${newBox
+                                        .currentMonth}/${newBox.currentYear}'),
+                              ),
+                            ],
+                          );
+                        },
+                        itemCount: data.tasksList.length,
+                      );
+                    }
+                  ),
+              ),
             )
           ],
         ),
@@ -152,8 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
-    Hive.close();
+    //Hive.close();
   }
 }
